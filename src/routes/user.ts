@@ -1,5 +1,9 @@
-import { Router, Request, Response } from "express";
-import User from "models/user";
+import { Router } from "express";
+import {
+  userCreationValidation,
+  userAvatarValidation,
+  userInfoValidation,
+} from "../utils/celebrate";
 import {
   createUser,
   getUsers,
@@ -8,10 +12,10 @@ import {
   updateAvatar,
 } from "../controllers/user";
 const router = Router();
-router.post("/", createUser);
+router.post("/", userCreationValidation, createUser);
 router.get("/", getUsers);
 router.get("/:userId", getUserById);
-router.patch("/me", updateProfile);
-router.patch("/me/avatar", updateAvatar);
+router.patch("/me", userInfoValidation, updateProfile);
+router.patch("/me/avatar", userAvatarValidation, updateAvatar);
 
 export default router;

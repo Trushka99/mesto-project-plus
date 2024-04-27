@@ -3,9 +3,10 @@ import express from "express";
 import path from "path";
 import mongoose from "mongoose";
 import userRouter from "./routes/user";
-import cardRouter from "./routes/cards"
-import { Request, Response } from "express";
-
+import cardRouter from "./routes/cards";
+import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
+import { errors } from "celebrate";
+import { INTERNAL_SERVER_ERROR } from "./utils/constants";
 /* Создаём экземпляр MongoClient, передав URL для подключения к MongoDB */
 
 const { PORT = 3000, BASE_PATH } = process.env;
@@ -27,4 +28,14 @@ app.use("/users", userRouter);
 app.use("/cards", cardRouter);
 
 app.use(express.static(path.join(__dirname, "public")));
+app.use(errors());
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.log(err);
+  const statusCode = err.statusCode || INTERNAL_SERVER_ERROR;
+  const message =
+    statusCode === INTERNAL_SERVER_ERROR
+      ? "На сервере произошла ошибка"
+      : err.message;
+  res.status(statusCode).send({ message });
+});
 app.listen(PORT);
