@@ -1,19 +1,23 @@
 import { Request, Response, NextFunction } from "express";
 import User from "../models/user";
 import { NotFound, BadRequest } from "../utils/errors.js";
-import mongoose from "mongoose";
 export const getUsers = (req: Request, res: Response) => {
   return User.find({})
     .then((Users) => res.send({ data: Users }))
     .catch(() => res.status(500).send({ message: "Произошла ошибка" }));
 };
 
-export const createUser = (req: Request, res: Response) => {
+export const createUser = (req: Request, res: Response, next: NextFunction) => {
   const { name, about, avatar } = req.body;
 
   return User.create({ name, about, avatar })
     .then((user) => res.send({ data: user }))
-    .catch(() => res.status(500).send({ message: "Произошла ошибка" }));
+    .catch((err) => {
+      if (err.name === "ValidationError") {
+        return next(new BadRequest("Ошибка в вводе данных пользователя"));
+      }
+      return next(err);
+    });
 };
 
 export const getUserById = (
@@ -47,7 +51,7 @@ export const updateProfile = (req: any, res: Response, next: NextFunction) => {
     })
     .catch((err) => {
       if (err.name === "ValidationError") {
-        return next(new NotFound("Ошибка в вводе данных пользователя"));
+        return next(new BadRequest("Ошибка в вводе данных пользователя"));
       }
       return next(err);
     });
@@ -62,7 +66,7 @@ export const updateAvatar = (req: any, res: Response, next: NextFunction) => {
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === "ValidationError") {
-        return next(new NotFound("Ошибка в вводе данных пользователя"));
+        return next(new BadRequest("Ошибка в вводе данных пользователя"));
       }
       return next(err);
     });
