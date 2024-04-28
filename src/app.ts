@@ -1,15 +1,12 @@
-import express from "express";
 // Слушаем 3000 порт
-import path from "path";
 import mongoose from "mongoose";
-import userRouter from "./routes/user";
-import cardRouter from "./routes/cards";
-import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
+import express, { Request, Response } from "express";
 import { errors } from "celebrate";
+import router from "./routes/index";
 import { INTERNAL_SERVER_ERROR } from "./utils/constants";
 /* Создаём экземпляр MongoClient, передав URL для подключения к MongoDB */
 
-const { PORT = 3000, BASE_PATH } = process.env;
+const { PORT = 3000 } = process.env;
 mongoose.connect("mongodb://0.0.0.0:27017/mestodb");
 
 const app = express();
@@ -24,13 +21,10 @@ app.use((req: any, res: any, next) => {
   next();
 });
 
-app.use("/users", userRouter);
-app.use("/cards", cardRouter);
+app.use("/", router);
 
-app.use(express.static(path.join(__dirname, "public")));
 app.use(errors());
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.log(err);
+app.use((err: any, req: Request, res: Response) => {
   const statusCode = err.statusCode || INTERNAL_SERVER_ERROR;
   const message =
     statusCode === INTERNAL_SERVER_ERROR
