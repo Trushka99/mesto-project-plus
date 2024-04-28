@@ -31,3 +31,10 @@ export const userAvatarValidation = celebrate({
     avatar: Joi.string().required().regex(urlPattern),
   }),
 });
+
+export const loginValidation = celebrate({
+  body: Joi.object({
+    email: Joi.string().email().required(),
+    password: Joi.string().required(),
+  }),
+});

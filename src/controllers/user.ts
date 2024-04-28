@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import User from "../models/user";
-import { NotFound, BadRequest } from "../utils/errors.js";
+import { NotFound, BadRequest, EmailRegisteredError } from "../utils/errors.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 export const getUsers = (req: Request, res: Response) => {
@@ -9,12 +9,24 @@ export const getUsers = (req: Request, res: Response) => {
     .catch(() => res.status(500).send({ message: "Произошла ошибка" }));
 };
 
-export const createUser = (req: Request, res: Response) => {
+export const createUser = (req: Request, res: Response, next: NextFunction) => {
   const { name, about, avatar, email, password } = req.body;
   return bcrypt.hash(password, 10).then((hash: string) =>
     User.create({ name, about, avatar, email, password: hash })
       .then((user) => res.send({ data: user }))
-      .catch(() => res.status(500).send({ message: "Произошла ошибка" }))
+      .catch((err) => {
+        if (err.code === 11000) {
+          return next(
+            new EmailRegisteredError(
+              "Аккаунт с указанной почтой уже существует"
+            )
+          );
+        }
+        if (err.name === "ValidationError") {
+          return next(new BadRequest("Ошибка в вводе данных пользователя"));
+        }
+        return next(err);
+      })
   );
 };
 export const loginUser = (req: Request, res: Response) => {
@@ -23,7 +35,7 @@ export const loginUser = (req: Request, res: Response) => {
   return User.findUserByCredentials(email, password)
     .then((user) => {
       res.send({
-        token: jwt.sign({ _id: user._id }, "662cca94cfd64385dcc31ecc", {
+        token: jwt.sign({ _id: user._id }, "662ce4ad3098cc1b2a1172c0", {
           expiresIn: "7d",
         }),
       });
@@ -63,7 +75,7 @@ export const updateProfile = (req: any, res: Response, next: NextFunction) => {
     })
     .catch((err) => {
       if (err.name === "ValidationError") {
-        return next(new NotFound("Ошибка в вводе данных пользователя"));
+        return next(new BadRequest("Ошибка в вводе данных пользователя"));
       }
       return next(err);
     });
@@ -78,7 +90,19 @@ export const updateAvatar = (req: any, res: Response, next: NextFunction) => {
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === "ValidationError") {
-        return next(new NotFound("Ошибка в вводе данных пользователя"));
+        return next(new BadRequest("Ошибка в вводе данных пользователя"));
+      }
+      return next(err);
+    });
+};
+export const getProfileInfo = (req: any, res: Response, next: NextFunction) => {
+  return User.findById(req.user._id)
+    .then((user) => {
+      res.send({ name: user?.name, about: user?.about });
+    })
+    .catch((err) => {
+      if (err.name === "ValidationError") {
+        return next(new NotFound("Пользователь с указанным id не найден"));
       }
       return next(err);
     });
