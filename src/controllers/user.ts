@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import user from "../models/user";
-import { NotFound, BadRequest } from "../utils/errors";
+import { NotFound, BadRequest, EmailRegisteredError } from "../utils/errors.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   return user
@@ -10,16 +12,41 @@ export const getUsers = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export const createUser = (req: Request, res: Response, next: NextFunction) => {
-  const { name, about, avatar } = req.body;
+  const { name, about, avatar, email, password } = req.body;
+  return bcrypt.hash(password, 10).then((hash: string) =>
+    user
+      .create({ name, about, avatar, email, password: hash })
+      .then((User) => res.send({ data: User }))
+      .catch((err) => {
+        if (err.code === 11000) {
+          return next(
+            new EmailRegisteredError(
+              "Аккаунт с указанной почтой уже существует"
+            )
+          );
+        }
+        if (err.name === "ValidationError") {
+          return next(new BadRequest("Ошибка в вводе данных пользователя"));
+        }
+        return next(err);
+      })
+  );
+};
+
+export const loginUser = (req: Request, res: Response) => {
+  const { email, password } = req.body;
 
   return user
-    .create({ name, about, avatar })
-    .then((User) => res.send({ data: User }))
+    .findUserByCredentials(email, password)
+    .then((User) => {
+      res.send({
+        token: jwt.sign({ _id: User._id }, "662ce4ad3098cc1b2a1172c0", {
+          expiresIn: "7d",
+        }),
+      });
+    })
     .catch((err) => {
-      if (err.name === "ValidationError") {
-        return next(new BadRequest("Ошибка в вводе данных пользователя"));
-      }
-      return next(err);
+      res.status(401).send({ message: err.message });
     });
 };
 
@@ -86,6 +113,20 @@ export const updateAvatar = (req: any, res: Response, next: NextFunction) => {
     .catch((err) => {
       if (err.name === "ValidationError") {
         return next(new BadRequest("Ошибка в вводе данных пользователя"));
+      }
+      return next(err);
+    });
+};
+
+export const getProfileInfo = (req: any, res: Response, next: NextFunction) => {
+  return user
+    .findById(req.user._id)
+    .then((User) => {
+      res.send({ name: User?.name, about: User?.about });
+    })
+    .catch((err) => {
+      if (err.name === "ValidationError") {
+        return next(new NotFound("Пользователь с указанным id не найден"));
       }
       return next(err);
     });

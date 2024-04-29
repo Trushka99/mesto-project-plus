@@ -24,29 +24,37 @@ export const createCard = (req: any, res: Response, next: NextFunction) => {
     });
 };
 
-export const deleteCard = (req: Request, res: Response, next: NextFunction) => {
+export const deleteCard = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
   const { cardId } = req.params;
-  return card
-    .findByIdAndDelete(cardId)
-    .orFail()
-    .then((Card) => res.send({ data: Card }))
-    .catch((err) => {
-      if (err.name === "DocumentNotFoundError") {
-        next(new NotFound("Карточка с указанным id не найдена"));
-      }
-      if (err.name === "CastError") {
-        next(new NotFound("Неправильный формат идентификатора"));
-      } else {
-        next(err);
-      }
-    });
+  const cardToDelete = await card.findById(cardId).orFail();
+
+  if (cardToDelete.owner.toString() !== req.user?._id) {
+    return card
+      .findByIdAndDelete(cardId)
+      .orFail()
+      .then((Card) => res.send({ data: Card }))
+      .catch((err) => {
+        if (err.name === "DocumentNotFoundError") {
+          next(new NotFound("Карточка с указанным id не найдена"));
+        }
+        if (err.name === "CastError") {
+          next(new NotFound("Неправильный формат идентификатора"));
+        } else {
+          next(err);
+        }
+      });
+  }
 };
 export const likeCard = (req: any, res: Response, next: NextFunction) => {
   return card
     .findByIdAndUpdate(
       req.params.cardId,
       { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
-      { new: true },
+      { new: true }
     )
     .orFail()
     .then((Card) => res.send({ data: Card }))
@@ -67,7 +75,7 @@ export const dislikeCard = (req: any, res: Response, next: NextFunction) => {
     .findByIdAndUpdate(
       req.params.cardId,
       { $pull: { likes: req.user._id } }, // убрать _id из массива
-      { new: true },
+      { new: true }
     )
     .orFail()
     .then((Card) => res.send({ data: Card }))
