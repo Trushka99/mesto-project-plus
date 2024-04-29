@@ -1,6 +1,7 @@
 // models/user.ts
 import mongoose from "mongoose";
 import user from "./user";
+import { linkValidation } from "../utils/constants";
 interface ICard {
   name: string;
   link: string;
@@ -19,6 +20,7 @@ const cardSchema = new mongoose.Schema<ICard>({
   link: {
     type: String,
     required: true,
+    validate: linkValidation,
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,

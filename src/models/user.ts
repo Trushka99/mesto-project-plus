@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import validator from "validator";
 import bcrypt from "bcrypt";
+import { AuthError } from "../utils/errors";
+import { linkValidation } from "../utils/constants";
 
 interface IUser {
   name: string;
@@ -35,6 +37,7 @@ const userSchema = new mongoose.Schema<IUser, UserModel>({
     default:
       "https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png",
     required: false,
+    validate: linkValidation,
   },
 
   email: {
@@ -56,12 +59,12 @@ userSchema.static(
       .select("+password")
       .then((user) => {
         if (!user) {
-          return Promise.reject(new Error("Неправильные почта или пароль"));
+          throw new AuthError("Неправильные почта или пароль");
         }
 
         return bcrypt.compare(password, user.password).then((matched) => {
           if (!matched) {
-            return Promise.reject(new Error("Неправильные почта или пароль"));
+            throw new AuthError("Неправильные почта или пароль");
           }
 
           return user;

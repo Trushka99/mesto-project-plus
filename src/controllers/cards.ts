@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import card from "../models/card";
-import { NotFound, BadRequest } from "../utils/errors";
+import { NotFound, BadRequest, OwnerError } from "../utils/errors";
 
 export const getCards = (req: Request, res: Response, next: NextFunction) => {
   return card
@@ -32,7 +32,7 @@ export const deleteCard = async (
   const { cardId } = req.params;
   const cardToDelete = await card.findById(cardId).orFail();
 
-  if (cardToDelete.owner.toString() !== req.user?._id) {
+  if (cardToDelete.owner.toString() === req.user?._id) {
     return card
       .findByIdAndDelete(cardId)
       .orFail()
@@ -40,14 +40,14 @@ export const deleteCard = async (
       .catch((err) => {
         if (err.name === "DocumentNotFoundError") {
           next(new NotFound("Карточка с указанным id не найдена"));
-        }
-        if (err.name === "CastError") {
+        } else if (err.name === "CastError") {
           next(new NotFound("Неправильный формат идентификатора"));
         } else {
           next(err);
         }
       });
   }
+  next(new OwnerError("Вы не можете удалять чужие карточки"));
 };
 export const likeCard = (req: any, res: Response, next: NextFunction) => {
   return card
@@ -61,8 +61,7 @@ export const likeCard = (req: any, res: Response, next: NextFunction) => {
     .catch((err) => {
       if (err.name === "DocumentNotFoundError") {
         next(new NotFound("Карточка с указанным id не найдена"));
-      }
-      if (err.name === "CastError") {
+      } else if (err.name === "CastError") {
         next(new NotFound("Неправильный формат идентификатора"));
       } else {
         next(err);
@@ -82,8 +81,7 @@ export const dislikeCard = (req: any, res: Response, next: NextFunction) => {
     .catch((err) => {
       if (err.name === "DocumentNotFoundError") {
         next(new NotFound("Карточка с указанным id не найдена"));
-      }
-      if (err.name === "CastError") {
+      } else if (err.name === "CastError") {
         next(new NotFound("Неправильный формат идентификатора"));
       } else {
         next(err);

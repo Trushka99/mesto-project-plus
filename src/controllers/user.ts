@@ -67,8 +67,7 @@ export const getUserById = (
     .catch((err) => {
       if (err.name === "DocumentNotFoundError") {
         next(new NotFound("Пользователь с указанным id не найдена"));
-      }
-      if (err.name === "CastError") {
+      } else if (err.name === "CastError") {
         next(new NotFound("Неправильный формат идентификатора"));
       } else {
         next(err);

@@ -3,6 +3,7 @@ import {
   BAD_REQUEST,
   AUTHORIZATION_ERROR,
   EMAIL_ALREADY_REGISTERED,
+  OWNER_RIGHTS,
 } from "./constants";
 
 export class NotFound extends Error {
@@ -30,5 +31,12 @@ export class EmailRegisteredError extends Error {
   constructor(message) {
     super(message);
     this.statusCode = EMAIL_ALREADY_REGISTERED;
+  }
+}
+
+export class OwnerError extends Error {
+  constructor(message) {
+    super(message);
+    this.statusCode = OWNER_RIGHTS;
   }
 }

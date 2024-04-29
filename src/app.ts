@@ -29,6 +29,7 @@ app.use((err: any, req: Request, res: Response) => {
     statusCode === INTERNAL_SERVER_ERROR
       ? "На сервере произошла ошибка"
       : err.message;
+
   res.status(statusCode).send({ message });
 });
 app.listen(PORT);

@@ -23,7 +23,7 @@ export default (req: any, res: Response, next: NextFunction) => {
   try {
     payload = jwt.verify(token, "662ce4ad3098cc1b2a1172c0");
   } catch (err) {
-    return handleAuthError(next);
+    handleAuthError(next);
   }
 
   req.user = payload; // записываем пейлоуд в объект запроса
