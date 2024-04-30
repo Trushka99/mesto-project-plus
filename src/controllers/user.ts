@@ -1,8 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import user from "../models/user";
-import { NotFound, BadRequest, EmailRegisteredError } from "../utils/errors.js";
+import {
+  NotFound,
+  BadRequest,
+  EmailRegisteredError,
+  AuthError,
+} from "../utils/errors.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   return user
@@ -16,7 +22,7 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
   return bcrypt.hash(password, 10).then((hash: string) =>
     user
       .create({ name, about, avatar, email, password: hash })
-      .then((User) => res.send({ data: User }))
+      .then((User) => res.status(201).send({ data: User }))
       .catch((err) => {
         if (err.code === 11000) {
           return next(
@@ -25,7 +31,7 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
             )
           );
         }
-        if (err.name === "ValidationError") {
+        if (err instanceof mongoose.Error.ValidationError) {
           return next(new BadRequest("Ошибка в вводе данных пользователя"));
         }
         return next(err);
@@ -33,7 +39,7 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
   );
 };
 
-export const loginUser = (req: Request, res: Response) => {
+export const loginUser = (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
 
   return user
@@ -46,7 +52,7 @@ export const loginUser = (req: Request, res: Response) => {
       });
     })
     .catch((err) => {
-      res.status(401).send({ message: err.message });
+      return next(new AuthError("Введен некорректный пароль или почта"));
     });
 };
 
@@ -65,9 +71,9 @@ export const getUserById = (
       res.send({ data: User });
     })
     .catch((err) => {
-      if (err.name === "DocumentNotFoundError") {
+      if (err instanceof mongoose.Error.DocumentNotFoundError) {
         next(new NotFound("Пользователь с указанным id не найдена"));
-      } else if (err.name === "CastError") {
+      } else if (err instanceof mongoose.Error.CastError) {
         next(new NotFound("Неправильный формат идентификатора"));
       } else {
         next(err);
@@ -90,7 +96,7 @@ export const updateProfile = (req: any, res: Response, next: NextFunction) => {
       res.send({ data: User });
     })
     .catch((err) => {
-      if (err.name === "ValidationError") {
+      if (err instanceof mongoose.Error.ValidationError) {
         return next(new BadRequest("Ошибка в вводе данных пользователя"));
       }
       return next(err);
@@ -110,7 +116,7 @@ export const updateAvatar = (req: any, res: Response, next: NextFunction) => {
     )
     .then((User) => res.send({ data: User }))
     .catch((err) => {
-      if (err.name === "ValidationError") {
+      if (err instanceof mongoose.Error.ValidationError) {
         return next(new BadRequest("Ошибка в вводе данных пользователя"));
       }
       return next(err);
@@ -124,9 +130,6 @@ export const getProfileInfo = (req: any, res: Response, next: NextFunction) => {
       res.send({ name: User?.name, about: User?.about });
     })
     .catch((err) => {
-      if (err.name === "ValidationError") {
-        return next(new NotFound("Пользователь с указанным id не найден"));
-      }
       return next(err);
     });
 };

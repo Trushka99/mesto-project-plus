@@ -1,5 +1,5 @@
-import { Router} from "express";
-import { cardValidation } from "../utils/celebrate";
+import { Router } from "express";
+import { cardValidation, getCardValidation } from "../utils/celebrate";
 import {
   createCard,
   getCards,
@@ -7,11 +7,12 @@ import {
   likeCard,
   dislikeCard,
 } from "../controllers/cards";
+
 const router = Router();
 router.post("/", cardValidation, createCard);
 router.get("/", getCards);
-router.delete("/:cardId", deleteCard);
-router.put("/:cardId/likes", likeCard);
-router.delete("/:cardId/likes", dislikeCard);
+router.delete("/:cardId", getCardValidation, deleteCard);
+router.put("/:cardId/likes", getCardValidation, likeCard);
+router.delete("/:cardId/likes", getCardValidation, dislikeCard);
 
 export default router;

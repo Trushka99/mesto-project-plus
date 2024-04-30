@@ -38,3 +38,15 @@ export const loginValidation = celebrate({
     password: Joi.string().required(),
   }),
 });
+
+export const getCardValidation = celebrate({
+  params: Joi.object().keys({
+    cardId: Joi.string().length(24).hex().required(),
+  }),
+});
+
+export const getUserIdValidation = celebrate({
+  params: Joi.object().keys({
+    userId: Joi.string().length(24).hex().required(),
+  }),
+});
