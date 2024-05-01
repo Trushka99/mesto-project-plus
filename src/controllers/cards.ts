@@ -53,42 +53,60 @@ export const deleteCard = async (
     }
   }
 };
-export const likeCard = (req: any, res: Response, next: NextFunction) => {
-  return card
-    .findByIdAndUpdate(
-      req.params.cardId,
-      { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
-      { new: true }
-    )
-    .orFail()
-    .then((Card) => res.send({ data: Card }))
-    .catch((err) => {
-      if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        next(new NotFound("Карточка с указанным id не найдена"));
-      } else if (err instanceof mongoose.Error.CastError) {
-        next(new NotFound("Неправильный формат идентификатора"));
-      } else {
-        next(err);
+export const likeCard = async (req: any, res: Response, next: NextFunction) => {
+  const { cardId } = req.params;
+  try {
+    const Card = await card.findByIdAndUpdate(
+      cardId,
+      {
+        $addToSet: {
+          likes: req.user._id,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
       }
-    });
+    );
+    if (!Card) {
+      return next(new NotFound("Карточки с таким айди не обнаружена"));
+    }
+    return res.json({ data: Card });
+  } catch (error) {
+    if (error instanceof mongoose.Error.CastError) {
+      return next(new NotFound("Неправильный формат идентификатора"));
+    }
+    return next(error);
+  }
 };
 
-export const dislikeCard = (req: any, res: Response, next: NextFunction) => {
-  return card
-    .findByIdAndUpdate(
-      req.params.cardId,
-      { $pull: { likes: req.user._id } }, // убрать _id из массива
-      { new: true }
-    )
-    .orFail()
-    .then((Card) => res.send({ data: Card }))
-    .catch((err) => {
-      if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        next(new NotFound("Карточка с указанным id не найдена"));
-      } else if (err instanceof mongoose.Error.CastError) {
-        next(new NotFound("Неправильный формат идентификатора"));
-      } else {
-        next(err);
+export const dislikeCard = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  const { cardId } = req.params;
+  try {
+    const Card = await card.findByIdAndUpdate(
+      cardId,
+      {
+        $pull: {
+          likes: req.user._id,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
       }
-    });
+    );
+    if (!Card) {
+      return next(new NotFound("Карточки с таким айди не обнаружена"));
+    }
+    return res.json({ data: Card });
+  } catch (error) {
+    if (error instanceof mongoose.Error.CastError) {
+      return next(new NotFound("Неправильный формат идентификатора"));
+    }
+    return next(error);
+  }
 };

@@ -52,7 +52,7 @@ export const loginUser = (req: Request, res: Response, next: NextFunction) => {
       });
     })
     .catch((err) => {
-      return next(new AuthError("Введен некорректный пароль или почта"));
+      return next(err);
     });
 };
 
