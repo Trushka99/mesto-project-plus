@@ -65,16 +65,14 @@ export const getUserById = (
 
   return user
     .findById(userId)
-    .orFail()
+    .orFail(new NotFound("Пользователь с указанным id не найдена"))
 
     .then((User) => {
       res.send({ data: User });
     })
     .catch((err) => {
-      if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        next(new NotFound("Пользователь с указанным id не найдена"));
-      } else if (err instanceof mongoose.Error.CastError) {
-        next(new NotFound("Неправильный формат идентификатора"));
+      if (err instanceof mongoose.Error.CastError) {
+        next(new BadRequest("Неправильный формат идентификатора"));
       } else {
         next(err);
       }

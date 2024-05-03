@@ -32,7 +32,9 @@ export const deleteCard = async (
 ) => {
   const { cardId } = req.params;
   try {
-    const cardToDelete = await card.findById(cardId).orFail();
+    const cardToDelete = await card
+      .findById(cardId)
+      .orFail(new NotFound("Карточка с указанным id не найдена"));
 
     if (cardToDelete.owner.toString() === req.user?._id) {
       return cardToDelete
@@ -44,10 +46,8 @@ export const deleteCard = async (
     }
     next(new OwnerError("Вы не можете удалять чужие карточки"));
   } catch (err) {
-    if (err instanceof mongoose.Error.DocumentNotFoundError) {
-      next(new NotFound("Карточка с указанным id не найдена"));
-    } else if (err instanceof mongoose.Error.CastError) {
-      next(new NotFound("Неправильный формат идентификатора"));
+    if (err instanceof mongoose.Error.CastError) {
+      next(new BadRequest("Неправильный формат идентификатора"));
     } else {
       next(err);
     }
